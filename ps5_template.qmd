@@ -59,33 +59,39 @@ alt.renderers.enable("png")
 ### 1. Scraping (PARTNER 1)
 
 ```{python}
+# Get the HTML
 soup = BeautifulSoup(requests.get("https://oig.hhs.gov/fraud/enforcement/").\
   content, "html.parser")
 
+# Find and store titles
 titles = soup.find_all("h2", class_="usa-card__heading")
 title_list = []
 for title in titles:
     title = title.find("a").text.strip()
     title_list.append(title)
 
+# Find and store links
 links = soup.find_all("h2", class_="usa-card__heading")
 link_list = []
 for link in links:
     link = link.find("a").get("href")
     link_list.append("https://oig.hhs.gov" + link)
 
+# Find and store dates
 dates = soup.find_all("span", class_="text-base-dark")
 date_list = []
 for date in dates:
     date = date.text.strip()
     date_list.append(date)
 
+# Find and store categories
 categories = soup.find_all("ul", class_="display-inline")
 category_list = []
 for category in categories:
     category = category.find("li").text.strip()
     category_list.append(category)
 
+# Merge values
 values = pd.DataFrame({
     "Title": title_list,
     "Link": link_list,
@@ -93,6 +99,7 @@ values = pd.DataFrame({
     "Category": category_list
 })
 
+# Print head
 values.head()
 ```
 
@@ -100,7 +107,21 @@ values.head()
 ### 2. Crawling (PARTNER 1)
 
 ```{python}
+# List to store agencies
+agencies = []
 
+# Loop through each link
+for link in values["Link"]:
+        response = requests.get(link)
+        soup_agency = BeautifulSoup(response.content, "html.parser")
+        agency = soup_agency.find("span", text="Agency:")
+        agencies.append(agency.next_sibling.strip())
+
+# Add column to the dataframe
+values["Agency"] = agencies
+
+# Print head
+values.head()
 ```
 
 ## Step 2: Making the scraper dynamic
