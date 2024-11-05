@@ -238,7 +238,18 @@ print(earliest_action)
 * c. Test Partner's Code (PARTNER 1)
 
 ```{python}
+# From January 2021
+enforcement_actions_2021 = dynamic_scraper(1, 2021)  
 
+# Count the number of enforcement actions in the DataFrame
+num_actions_2021 = enforcement_actions_2021.shape[0]
+print(f"Number of enforcement actions scraped: {num_actions_2021}")
+
+# Earliest enforcement action
+enforcement_actions_2021_sorted = enforcement_actions_2021.sort_values(by="Date", ascending=True)
+earliest_action_2021 = enforcement_actions_2021_sorted.iloc[0]
+print("\nEarliest enforcement action scraped since 2021:")
+print(earliest_action_2021)
 ```
 
 ## Step 3: Plot data based on scraped data
