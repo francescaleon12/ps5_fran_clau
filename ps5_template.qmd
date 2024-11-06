@@ -163,7 +163,7 @@ def dynamic_scraper(month, year):
     start_date = datetime(year, month, 1)
     
     # Initialize empty lists to store data
-    title_list, link_list, date_list, category_list = [], [], [], []
+    title_list, link_list, date_list, category_list, agency_list = [], [], [], [], []
     
     # Begin looping through pages for web scraping
     page = 1
@@ -196,11 +196,18 @@ def dynamic_scraper(month, year):
             # Extract category
             category_text = categories[i].find("li").text.strip()
             
+            # Crawl into each enforcement action link to get agency information
+            action_response = requests.get(full_link)
+            action_soup = BeautifulSoup(action_response.content, "html.parser")
+            agency = action_soup.find("span", text="Agency:")
+            agency_text = agency.next_sibling.strip() if agency else "N/A"
+            
             # Append data to lists
             title_list.append(title_text)
             link_list.append(full_link)
             date_list.append(date_object)
             category_list.append(category_text)
+            agency_list.append(agency_text)
         
         time.sleep(1)
         page += 1
@@ -210,7 +217,8 @@ def dynamic_scraper(month, year):
         "Title": title_list,
         "Link": link_list,
         "Date": date_list,
-        "Category": category_list
+        "Category": category_list,
+        "Agency": agency_list
     })
 
     # Save the filtered DataFrame to a CSV file
@@ -221,18 +229,17 @@ def dynamic_scraper(month, year):
     return data
 
 # For January 2023
-enforcement_actions= dynamic_scraper(1, 2023)  
-print(enforcement_actions.head())
+enforcement_actions_2023 = dynamic_scraper(1, 2023)  
 
 # Count the number of enforcement actions in the DataFrame
-num_actions = enforcement_actions.shape[0]
-print(f"Number of enforcement actions scraped: {num_actions}")
+num_actions_2023 = enforcement_actions_2023.shape[0]
+print(f"Number of enforcement actions scraped: {num_actions_2023}")
 
 # Earliest enforcement action
-enforcement_actions_sorted = enforcement_actions.sort_values(by="Date", ascending=True)
-earliest_action = enforcement_actions_sorted.iloc[0]
+enforcement_actions_2023_sorted = enforcement_actions_2023.sort_values(by="Date", ascending=True)
+earliest_action_2023 = enforcement_actions_2023_sorted.iloc[0]
 print("\nEarliest enforcement action scraped:")
-print(earliest_action)
+print(earliest_action_2023)
 ```
 
 * c. Test Partner's Code (PARTNER 1)
@@ -257,7 +264,17 @@ print(earliest_action_2021)
 ### 1. Plot the number of enforcement actions over time (PARTNER 2)
 
 ```{python}
+# Create the line chart
+line = alt.Chart(enforcement_actions_2021).mark_line().encode(
+    x=alt.X('yearmonth(Date):T', title='Date'),
+    y=alt.Y('count():Q', title='Monthly Enforcement Actions Count')
+).properties(
+    width=500,
+    height=300,
+    title="Monthly Enforcement Actions in 2021"
+)
 
+line
 ```
 
 ### 2. Plot the number of enforcement actions categorized: (PARTNER 1)
