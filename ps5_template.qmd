@@ -136,25 +136,25 @@ print(values.head())
 
 * a. Pseudo-Code (PARTNER 2)
 
-Step 1: Check if the year is 2013 or later. If not, ask the user to enter a valid year.
+Step 1: Inspect the HTML of the first enforcement actions page we want to scrape 
 
-Step 2: Initialize empty lists for storing titles, links, dates, and categories.
+Step 2: Check if the year is 2013 or later. If not, ask the user to enter a valid year.
 
-Step 3: Start web scraping as in Step 1, using a loop to go through each page.
+Step 3: Initialize empty lists for storing titles, links, dates, and categories.
 
-Step 4: For each page:
-    - Extract title, link, date, and category.
-    - Append this information to the respective lists.
-    - Identify the earliest date on the current page.
+Step 4: Parse HTML from first page and start web scraping as in Step 1, using a "while" loop to go through each page to find all tags.
 
-Step 5: If the earliest date on the current page is earlier than the user-specified start date, break the loop.
+Step 5: Use a for loop to extract title, link, date, and category
+        -Identify the date of each enforcement and make a conditional (if the date is earlier than the user-specified start date, break the loop.)
+        -Crawl into each enforcement action link to get agency information
+        -Then, append this information to the respective lists.
 
-Step 6: After the loop, create a DataFrame from the lists.
+Step 6: Create a DataFrame from the lists.
 
-Step 7: Filter the DataFrame to keep only records with dates from the user-specified date onward.
+Step 7: Save the final DataFrame to a CSV file.
 
-Step 8: Save the final DataFrame to a CSV file.
-
+* Function used
+ We use a while loop because this loop is used to execute a block of code repeatedly as long as a given condition is true. When the condition becomes false, the loop terminates and the next statement after the loop is executed. In our case, we want that the loop iterates (extract title, link, date, category and agency) until the date is earlier that the user-specified start date.
 
 * b. Create Dynamic Scraper (PARTNER 2)
 
@@ -167,7 +167,7 @@ def dynamic_scraper(month, year):
     
     start_date = datetime(year, month, 1)
     
-    # Initialize empty lists to store data
+    # Empty lists to store data
     title_list, link_list, date_list, category_list, agency_list = [], [], [], [], []
     
     # Begin looping through pages for web scraping
@@ -184,12 +184,10 @@ def dynamic_scraper(month, year):
         categories = soup.find_all("ul", class_="display-inline")
         
         for i in range(len(titles)):
-            # Extract title and link
             title_text = titles[i].find("a").text.strip()
             link = titles[i].find("a").get("href")
             full_link = "https://oig.hhs.gov" + link
             
-            # Extract date 
             date_text = dates[i].text.strip()
             date_object = datetime.strptime(date_text, "%B %d, %Y")
             
@@ -198,7 +196,6 @@ def dynamic_scraper(month, year):
                 stop_scraping = True
                 break
             
-            # Extract category
             category_text = categories[i].find("li").text.strip()
             
             # Crawl into each enforcement action link to get agency information
@@ -226,7 +223,7 @@ def dynamic_scraper(month, year):
         "Agency": agency_list
     })
 
-    # Save the filtered DataFrame to a CSV file
+    # Save the DataFrame
     filename = f"enforcement_actions_{year}_{month}.csv"
     data.to_csv(filename, index=False)
     print(f"Data saved to {filename}")
