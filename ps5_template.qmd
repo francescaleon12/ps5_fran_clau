@@ -49,12 +49,13 @@ import requests
 from tabulate import tabulate
 from datetime import datetime
 import geopandas as gpd
+import matplotlib.pyplot as plt
 
 import warnings 
 warnings.filterwarnings('ignore')
 alt.renderers.enable("png")
 
-base_directory = '/Users/francescaleon/Documents/GitHub/DAPII/ps5_fran_clau/'
+base_directory = 'C:/Users/clfel/Documents/GitHub/ps5_fran_clau/'
 
 ```
 
@@ -352,7 +353,35 @@ plt.show()
 ### 2. Map by District (PARTNER 2)
 
 ```{python}
+# Load the shapefile
+attorney_districts = gpd.read_file(os.path.join(base_directory, 'US Attorney Districts Shapefile simplified_20241105/geo_export_621dfc4b-5498-404a-b454-d8ad6f050b31.shp'))
 
+# Filter enforcement actions taken by state-level agencies
+states_enf_actions = enforcement_actions_2021[enforcement_actions_2021['Agency'].str.contains("District")]
+
+# Function to extract text after the comma
+def extract_district_after_comma(text):
+    parts = text.split(",")
+    if len(parts) > 1:
+        return parts[1].strip() 
+    return "N/A"
+
+# Apply function to extract districts
+enforcement_actions_2021['District'] = enforcement_actions_2021['Agency'].apply(extract_district_after_comma)
+
+# Merge shapefile with enforcement actions
+district_merge = pd.merge(enforcement_actions_2021, attorney_districts, left_on=['District'], right_on=['judicial_d'], how='left')
+
+# Count values by District
+district_merge = gpd.GeoDataFrame(district_merge[['District', 'geometry', 'Agency']].groupby(['District', 'geometry']).count().reset_index().rename(columns={'Agency': 'enforcement_actions'}), geometry='geometry')
+
+# Plot the choropleth map
+fig, ax = plt.subplots(1, 1, figsize=(8, 8)) 
+district_merge.plot(column='enforcement_actions', cmap='YlGnBu', legend=True, ax=ax)
+ax.set_xlim([-130, -60])
+ax.set_ylim([20, 55]) 
+ax.set_title("Number of Enforcement Actions by District", fontsize=15)
+plt.show()
 ```
 
 ## Extra Credit
