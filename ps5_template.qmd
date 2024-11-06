@@ -55,7 +55,7 @@ import warnings
 warnings.filterwarnings('ignore')
 alt.renderers.enable("png")
 
-base_directory = 'C:/Users/clfel/Documents/GitHub/ps5_fran_clau/'
+base_directory = '/Users/francescaleon/Documents/GitHub/DAPII/ps5_fran_clau/'
 
 ```
 
@@ -106,7 +106,7 @@ values = pd.DataFrame({
 })
 
 # Print head
-values.head()
+print(values.head())
 ```
 
   
@@ -127,7 +127,7 @@ for link in values["Link"]:
 values["Agency"] = agencies
 
 # Print head
-values.head()
+print(values.head())
 ```
 
 ## Step 2: Making the scraper dynamic
@@ -136,24 +136,24 @@ values.head()
 
 * a. Pseudo-Code (PARTNER 2)
 
-1. Check if the year is 2013 or later. If not, ask the user to enter a valid year.
+Step 1: Check if the year is 2013 or later. If not, ask the user to enter a valid year.
 
-2. Initialize empty lists for storing titles, links, dates, and categories.
+Step 2: Initialize empty lists for storing titles, links, dates, and categories.
 
-3. Start web scraping as in Step 1, using a loop to go through each page.
+Step 3: Start web scraping as in Step 1, using a loop to go through each page.
 
-4. For each page:
+Step 4: For each page:
     - Extract title, link, date, and category.
     - Append this information to the respective lists.
     - Identify the earliest date on the current page.
 
-5. If the earliest date on the current page is earlier than the user-specified start date, break the loop.
+Step 5: If the earliest date on the current page is earlier than the user-specified start date, break the loop.
 
-6. After the loop, create a DataFrame from the lists.
+Step 6: After the loop, create a DataFrame from the lists.
 
-7. Filter the DataFrame to keep only records with dates from the user-specified date onward.
+Step 7: Filter the DataFrame to keep only records with dates from the user-specified date onward.
 
-8. Save the final DataFrame to a CSV file.
+Step 8: Save the final DataFrame to a CSV file.
 
 
 * b. Create Dynamic Scraper (PARTNER 2)
@@ -354,7 +354,7 @@ plt.show()
 
 ```{python}
 # Load the shapefile
-attorney_districts = gpd.read_file(os.path.join(base_directory, 'US Attorney Districts Shapefile simplified_20241105/geo_export_621dfc4b-5498-404a-b454-d8ad6f050b31.shp'))
+attorney_districts = gpd.read_file(os.path.join(base_directory, 'US Attorney Districts Shapefile simplified_20241105/geo_export_ae39349c-4874-41e8-809c-af605a0ac6fa.shp'))
 
 # Filter enforcement actions taken by state-level agencies
 states_enf_actions = enforcement_actions_2021[enforcement_actions_2021['Agency'].str.contains("District")]
@@ -388,15 +388,41 @@ plt.show()
 
 ### 1. Merge zip code shapefile with population
 ```{python}
+# Import shapefile previous problem set
+zips_shp = gpd.read_file('/Users/francescaleon/Documents/GitHub/DAPII/problem-set-4-fran-clau/gz_2010_us_860_00_500k/gz_2010_us_860_00_500k.shp')
 
+# Import and clean census data
+census = pd.read_csv(os.path.join(base_directory, 'DECENNIALDHC2020.P1_2024-11-05T214024/DECENNIALDHC2020.P1-Data.csv'))
+census["NAME"] = census["NAME"].str.replace("ZCTA5 ", "", regex=False)
+census = census[['GEO_ID', 'NAME', 'P1_001N']].drop(index=0).reset_index(drop=True).rename(columns={'P1_001N': 'POPULATION', 'NAME': 'ZCTA5'})
+
+# Merge shapefile with census data
+zips_census = zips_shp.merge(census, on="ZCTA5", how="left")
 ```
 
 ### 2. Conduct spatial join
 ```{python}
+# Spatial join between zips population and districts
+zips_district = gpd.sjoin(district_merge, zips_census, how="inner", predicate="intersects")
 
+# Ensure all values are numeric
+zips_district['enforcement_actions'] = pd.to_numeric(zips_district['enforcement_actions'], errors='coerce')
+zips_district['POPULATION'] = pd.to_numeric(zips_district['POPULATION'], errors='coerce')
+
+# Aggregate variables
+zips_district_agg = gpd.GeoDataFrame(zips_district[['District', 'geometry', 'enforcement_actions', 'POPULATION']].groupby(['District', 'geometry']).agg({'enforcement_actions': 'mean', 'POPULATION': 'sum'}).reset_index())
 ```
 
 ### 3. Map the action ratio in each district
 ```{python}
+# Calculate ratio of enforcement actions
+zips_district_agg['ratio_enforcement'] = (zips_district_agg['enforcement_actions']/zips_district_agg['POPULATION'])*100
 
+# Plot the choropleth map
+fig, ax = plt.subplots(1, 1, figsize=(8, 8)) 
+zips_district_agg.plot(column='ratio_enforcement', cmap='YlGnBu', legend=True, ax=ax)
+ax.set_xlim([-130, -60])
+ax.set_ylim([20, 55])
+ax.set_title("Ratio of Enforcement Actions by District", fontsize=15)
+plt.show()
 ```
