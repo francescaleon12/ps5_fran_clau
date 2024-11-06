@@ -48,10 +48,14 @@ from bs4 import BeautifulSoup
 import requests
 from tabulate import tabulate
 from datetime import datetime
+import geopandas as gpd
 
 import warnings 
 warnings.filterwarnings('ignore')
 alt.renderers.enable("png")
+
+base_directory = '/Users/francescaleon/Documents/GitHub/DAPII/ps5_fran_clau/'
+
 ```
 
 
@@ -282,13 +286,36 @@ line
 * based on "Criminal and Civil Actions" vs. "State Enforcement Agencies"
 
 ```{python}
+# Filter categories of interest
+graph_categories = enforcement_actions_2021[enforcement_actions_2021['Category'].isin(['Criminal and Civil Actions', 'State Enforcement Agencies'])]
 
+# Graph using category
+alt.Chart(graph_categories, title = 'Number of Enforcement Actions Over Time by Category').mark_line().encode(
+  alt.X('yearmonth(Date):T').title('Date'),
+  alt.Y('count():Q').title('Number of Enforcement Actions'),
+  color=alt.Color('Category:N', title='Category')
+).properties(width = 500)
 ```
 
 * based on five topics
 
 ```{python}
+# Filter category of interest
+criminal_and_civil = enforcement_actions_2021[enforcement_actions_2021['Category'] == 'Criminal and Civil Actions']
 
+# Assign topics based on words in the title
+criminal_and_civil["Topic"] = "Other"
+criminal_and_civil.loc[criminal_and_civil["Title"].str.lower().str.contains("health|medicare|medicaid|healthcare"), "Topic"] = "Health Care Fraud"
+criminal_and_civil.loc[criminal_and_civil["Title"].str.lower().str.contains("bank|financial|finance|money laundering|investment"), "Topic"] = "Financial Fraud"
+criminal_and_civil.loc[criminal_and_civil["Title"].str.lower().str.contains("drug|narcotics|trafficking|opioid|pharmacy"), "Topic"] = "Drug Enforcement"
+criminal_and_civil.loc[criminal_and_civil["Title"].str.lower().str.contains("bribery|corruption|bribe|kickback"), "Topic"] = "Bribery/Corruption"
+
+# Graph using topics
+alt.Chart(criminal_and_civil, title = 'Number of Enforcement Actions Over Time by Topic').mark_line().encode(
+  alt.X('yearmonth(Date):T').title('Date'),
+  alt.Y('count():Q').title('Number of Enforcement Actions'),
+  color=alt.Color('Topic:N', title='Topic')
+).properties(width = 500)
 ```
 
 ## Step 4: Create maps of enforcement activity
@@ -296,7 +323,29 @@ line
 ### 1. Map by State (PARTNER 1)
 
 ```{python}
+# Import shapefile
+states_shp = gpd.read_file(os.path.join(base_directory, 'cb_2018_us_state_500k/cb_2018_us_state_500k.shp'))
 
+# Filter enforcement actions taken by state-level agencies
+states_enf_actions = enforcement_actions_2021[enforcement_actions_2021['Agency'].str.contains("State of")]
+
+# Keep only state names
+states_enf_actions["State"] = states_enf_actions["Agency"].str.extract(r"State of (.+)", expand=False)
+
+# Merge shapefile with enforcement actions
+states_merge = states_shp.merge(states_enf_actions, left_on="NAME", right_on="State", how="left")
+
+# Count values by state
+states_merge = gpd.GeoDataFrame(states_merge[['NAME', 'geometry', 'Agency']].groupby(['NAME', 'geometry']).count().reset_index().rename(columns={'Agency': 'enforcement_actions'}), geometry='geometry')
+
+
+#Plot choropleth 
+fig, ax = plt.subplots(1, 1, figsize=(8, 8)) 
+states_merge.plot(column='enforcement_actions', cmap='YlGnBu', legend=True, ax=ax)
+ax.set_xlim([-130, -60])
+ax.set_ylim([20, 55]) 
+ax.set_title("Number of Enforcement Actions by State", fontsize=15)
+plt.show()
 ```
 
 
