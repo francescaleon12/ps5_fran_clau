@@ -50,6 +50,7 @@ from tabulate import tabulate
 from datetime import datetime
 import geopandas as gpd
 import matplotlib.pyplot as plt
+import os
 
 import warnings 
 warnings.filterwarnings('ignore')
@@ -303,10 +304,18 @@ criminal_and_civil = enforcement_actions_2021[enforcement_actions_2021['Category
 
 # Assign topics based on words in the title
 criminal_and_civil["Topic"] = "Other"
-criminal_and_civil.loc[criminal_and_civil["Title"].str.lower().str.contains("health|medicare|medicaid|healthcare"), "Topic"] = "Health Care Fraud"
-criminal_and_civil.loc[criminal_and_civil["Title"].str.lower().str.contains("bank|financial|finance|money laundering|investment"), "Topic"] = "Financial Fraud"
-criminal_and_civil.loc[criminal_and_civil["Title"].str.lower().str.contains("drug|narcotics|trafficking|opioid|pharmacy"), "Topic"] = "Drug Enforcement"
-criminal_and_civil.loc[criminal_and_civil["Title"].str.lower().str.contains("bribery|corruption|bribe|kickback"), "Topic"] = "Bribery/Corruption"
+criminal_and_civil.loc[criminal_and_civil["Title"].str.lower().\
+    str.contains("health|medicare|medicaid|healthcare"), "Topic"]\
+         = "Health Care Fraud"
+criminal_and_civil.loc[criminal_and_civil["Title"].str.lower().\
+    str.contains("bank|financial|finance|money laundering|investment"),\
+         "Topic"] = "Financial Fraud"
+criminal_and_civil.loc[criminal_and_civil["Title"].str.lower().\
+    str.contains("drug|narcotics|trafficking|opioid|pharmacy"), "Topic"]\
+         = "Drug Enforcement"
+criminal_and_civil.loc[criminal_and_civil["Title"].str.lower().\
+    str.contains("bribery|corruption|bribe|kickback"), "Topic"]\
+         = "Bribery/Corruption"
 
 # Graph using topics
 alt.Chart(criminal_and_civil, title = 'Number of Enforcement Actions Over Time by Topic').mark_line().encode(
@@ -325,7 +334,8 @@ alt.Chart(criminal_and_civil, title = 'Number of Enforcement Actions Over Time b
 states_shp = gpd.read_file(os.path.join(base_directory, 'cb_2018_us_state_500k/cb_2018_us_state_500k.shp'))
 
 # Filter enforcement actions taken by state-level agencies
-states_enf_actions = enforcement_actions_2021[enforcement_actions_2021['Agency'].str.contains("State of")]
+states_enf_actions = enforcement_actions_2021[enforcement_actions_2021\
+    ['Agency'].str.contains("State of")]
 
 # Keep only state names
 states_enf_actions["State"] = states_enf_actions["Agency"].str.extract(r"State of (.+)", expand=False)
@@ -354,7 +364,8 @@ plt.show()
 attorney_districts = gpd.read_file(os.path.join(base_directory, 'US Attorney Districts Shapefile simplified_20241105/geo_export_ae39349c-4874-41e8-809c-af605a0ac6fa.shp'))
 
 # Filter enforcement actions taken by state-level agencies
-states_enf_actions = enforcement_actions_2021[enforcement_actions_2021['Agency'].str.contains("District")]
+states_enf_actions = enforcement_actions_2021[enforcement_actions_2021\
+    ['Agency'].str.contains("District")]
 
 # Function to extract text after the comma
 def extract_district_after_comma(text):
@@ -386,7 +397,7 @@ plt.show()
 ### 1. Merge zip code shapefile with population
 ```{python}
 # Import shapefile previous problem set
-zips_shp = gpd.read_file('/Users/francescaleon/Documents/GitHub/DAPII/problem-set-4-fran-clau/gz_2010_us_860_00_500k/gz_2010_us_860_00_500k.shp')
+zips_shp = gpd.read_file('/Users/francescaleon/Documents/GitHub/DAPII/\problem-set-4-fran-clau/gz_2010_us_860_00_500k/gz_2010_us_860_00_500k.shp')
 
 # Import and clean census data
 census = pd.read_csv(os.path.join(base_directory, 'DECENNIALDHC2020.P1_2024-11-05T214024/DECENNIALDHC2020.P1-Data.csv'))
